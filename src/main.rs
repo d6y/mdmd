@@ -1,6 +1,8 @@
 use rss::{extension::Extension, Channel};
 use std::str::FromStr;
 
+mod feed;
+
 fn main() {
     println!("Hello, world!");
 
