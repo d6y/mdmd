@@ -1,13 +1,23 @@
-use rss::{Channel, Guid};
+use rss::{Channel, Guid, Item};
 
-trait ChannelSurf {
-    /// Search the channel for the first GUID lexically greater than the given GUID
+pub trait ChannelSurf {
+    /// Search the channel for the first GUID lexically greater than the given GUID,
     /// which we refer to as "the next GUID" or "next post".
-    fn find_next_guid(&self, guid: &Guid) -> Option<Guid>;
+    fn find_next_guid(&self, guid: &Guid) -> Option<&Guid>;
+
+    /// Search the channel for all GUIDs lexically greater than the given GUID,
+    /// which we refer to as "the next GUIDs" or "next posts".
+    fn find_next_guids(&self, guid: &Guid) -> Vec<&Guid>;
+
+    fn find_by_guid(&self, guid: &Guid) -> Option<&Item>;
 }
 
 impl ChannelSurf for Channel {
-    fn find_next_guid(&self, from: &Guid) -> Option<Guid> {
+    fn find_next_guid(&self, from: &Guid) -> Option<&Guid> {
+        self.find_next_guids(from).into_iter().next()
+    }
+
+    fn find_next_guids(&self, from: &Guid) -> Vec<&Guid> {
         let mut candidates: Vec<&Guid> = self
             .items()
             .iter()
@@ -16,7 +26,13 @@ impl ChannelSurf for Channel {
             .collect();
 
         candidates.sort_by_key(|g| &g.value);
-        candidates.first().map(|&g| g.to_owned())
+        candidates
+    }
+
+    fn find_by_guid(&self, guid: &Guid) -> Option<&Item> {
+        self.items()
+            .into_iter()
+            .find(|&item| item.guid().map(|g| g.value()) == Some(guid.value()))
     }
 }
 
@@ -42,7 +58,7 @@ mod tests {
             permalink: true,
         };
 
-        assert_eq!(Some(expected), channel.find_next_guid(&from));
+        assert_eq!(Some(&expected), channel.find_next_guid(&from));
     }
 
     #[test]

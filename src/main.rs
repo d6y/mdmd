@@ -2,6 +2,7 @@ use rss::{extension::Extension, Channel};
 use std::str::FromStr;
 
 mod feed;
+mod markdown;
 
 fn main() {
     println!("Hello, world!");
