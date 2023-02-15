@@ -31,7 +31,7 @@ impl ChannelSurf for Channel {
 
     fn find_by_guid(&self, guid: &Guid) -> Option<&Item> {
         self.items()
-            .into_iter()
+            .iter()
             .find(|&item| item.guid().map(|g| g.value()) == Some(guid.value()))
     }
 }

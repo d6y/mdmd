@@ -17,7 +17,7 @@ fn main() {
         println!("{:?}", item.pub_date);
         //println!("{:?}", item.extensions);
         for (ext_type, ext_map) in item.extensions.iter() {
-            println!("{:?}", ext_type);
+            println!("{ext_type:?}");
             // vec<Extension>
             let xs: &Vec<Extension> = ext_map.get("content").unwrap();
             for x in xs {
