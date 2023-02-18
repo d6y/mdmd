@@ -7,15 +7,32 @@ trait AsMarkdown {
 
 impl AsMarkdown for Item {
     fn as_markdown(&self) -> Result<String, ParseError> {
-        let date = title_date(self.pub_date().unwrap())?;
+        let title = title_date(self.pub_date().unwrap())?;
         let msg = self.description().unwrap();
-        Ok(format!("# {date}\n\n{msg}"))
+        let instance = "mastodon.green";
+        let url = self.link().unwrap();
+        let date = formal_date(self.pub_date().unwrap())?;
+        Ok(format!(
+            r#"--
+title: {title}
+instance: {instance}
+toot_url: {url}
+date: {date}
+--
+
+{msg}
+"#
+        ))
     }
 }
 
 fn title_date(pub_date: &str) -> Result<String, ParseError> {
     let title_format = "%a %d %b %Y %H:%M"; // Tue 12 Dec 2006 11:02
     DateTime::parse_from_rfc2822(pub_date).map(|dt| dt.format(title_format).to_string())
+}
+
+fn formal_date(pub_date: &str) -> Result<String, ParseError> {
+    DateTime::parse_from_rfc2822(pub_date).map(|dt| dt.to_rfc3339().to_string())
 }
 
 fn filename_date(pub_date: &str) -> Result<String, ParseError> {
@@ -27,6 +44,8 @@ fn filename_date(pub_date: &str) -> Result<String, ParseError> {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+
     use super::*;
     use crate::feed::ChannelSurf;
     use rss::{Channel, Guid};
@@ -63,11 +82,12 @@ mod tests {
         let expected = r#"--
 title: Sat 04 Feb 2023 21:22
 instance: mastodon.green
-toot_url: https://mastodon.social/users/d6y/statuses/103498823626731219
-date: 2023-02-04T21:39:35Z
+toot_url: https://mastodon.green/@d6y/109808565659434052
+date: 2023-02-04T21:22:20+00:00
 --
 
-<p>A visit to the ASMR exhibit at the Design Museum. Yes, of course there was a Bob Ross room (as part of the unintentional ASMR section of the exhibit).</p><p><a href="https://designmuseum.org/exhibitions/weird-sensation-feels-good-the-world-of-asmr" target="_blank" rel="nofollow noopener noreferrer"><span class="invisible">https://</span><span class="ellipsis">designmuseum.org/exhibitions/w</span><span class="invisible">eird-sensation-feels-good-the-world-of-asmr</span></a></p>"#;
+<p>A visit to the ASMR exhibit at the Design Museum. Yes, of course there was a Bob Ross room (as part of the unintentional ASMR section of the exhibit).</p><p><a href="https://designmuseum.org/exhibitions/weird-sensation-feels-good-the-world-of-asmr" target="_blank" rel="nofollow noopener noreferrer"><span class="invisible">https://</span><span class="ellipsis">designmuseum.org/exhibitions/w</span><span class="invisible">eird-sensation-feels-good-the-world-of-asmr</span></a></p>
+"#;
 
         assert_eq!(expected, item.as_markdown().unwrap());
     }
