@@ -1,5 +1,5 @@
 use chrono::{DateTime, ParseError};
-use rss::Item;
+use rss::{extension::Extension, Item};
 
 trait AsMarkdown {
     fn as_markdown(&self) -> Result<String, ParseError>;
@@ -12,6 +12,28 @@ impl AsMarkdown for Item {
         let instance = "mastodon.green";
         let url = self.link().unwrap();
         let date = formal_date(self.pub_date().unwrap())?;
+
+        let mut markdown_medias = Vec::new();
+        for (ext_type, ext_map) in self.extensions.iter() {
+            if ext_type == "media" {
+                let medias: &Vec<Extension> = ext_map.get("content").unwrap();
+                for media in medias.iter() {
+                    let media_type = media.attrs.get("type").unwrap();
+                    let media_url = media.attrs.get("url").unwrap();
+                    let media_description = media
+                        .children
+                        .get("description")
+                        .and_then(|d| d[0].value.to_owned())
+                        .unwrap_or("".to_owned());
+
+                    let markdown_media = format!("![{media_description}]({media_url})\n");
+                    markdown_medias.push(markdown_media);
+                }
+            }
+        }
+
+        let images = markdown_medias.join("\n");
+
         Ok(format!(
             r#"--
 title: {title}
@@ -21,7 +43,8 @@ date: {date}
 --
 
 {msg}
-"#
+
+{images}"#
         ))
     }
 }
@@ -51,6 +74,8 @@ mod tests {
     use rss::{Channel, Guid};
     use std::str::FromStr;
 
+    const RSS_STR: &str = include_str!("../rss/example01.rss");
+
     #[test]
     fn test_convert_to_title_date() {
         assert_eq!(
@@ -68,8 +93,7 @@ mod tests {
     }
 
     #[test]
-    fn test_convert_item_to_markdown() {
-        const RSS_STR: &str = include_str!("../rss/example01.rss");
+    fn test_convert_item_with_images_to_markdown() {
         let channel = Channel::from_str(RSS_STR).unwrap();
 
         let from: Guid = Guid {
