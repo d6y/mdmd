@@ -1,7 +1,7 @@
 use chrono::{DateTime, ParseError};
 use rss::{extension::Extension, Item};
 
-trait AsMarkdown {
+pub trait AsMarkdown {
     fn as_markdown<F>(&self, media_url_to_path: F) -> Result<String, ParseError>
     where
         F: Fn(&str) -> String;
@@ -78,7 +78,7 @@ fn filename_date(pub_date: &str) -> Result<String, ParseError> {
     DateTime::parse_from_rfc2822(pub_date).map(|dt| dt.format(filename_format).to_string())
 }
 
-fn truncate_media_url(url: &str) -> String {
+pub fn truncate_media_url(url: &str) -> String {
     url.replace("https://files.", "/")
 }
 

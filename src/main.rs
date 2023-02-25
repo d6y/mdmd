@@ -1,15 +1,36 @@
-use rss::{extension::Extension, Channel};
+use rss::{extension::Extension, Channel, Guid};
 use std::str::FromStr;
+
+use crate::feed::ChannelSurf;
 
 mod feed;
 mod markdown;
+
+use markdown::AsMarkdown;
 
 fn main() {
     println!("Hello, world!");
 
     let rss_str = include_str!("../rss/example01.rss");
     let channel = Channel::from_str(rss_str).unwrap();
-    // println!("{:?}", channel);
+
+    let from: Guid = Guid {
+        value: "https://mastodon.green/@d6y/109808565659434052".to_string(),
+        permalink: true,
+    };
+
+    for guid in channel.find_next_guids(&from) {
+        println!(
+            "{:?}",
+            channel
+                .find_by_guid(guid)
+                .unwrap()
+                .as_markdown(markdown::truncate_media_url)
+        )
+    }
+}
+
+fn dump(channel: Channel) {
     for item in channel.items() {
         println!("{:?}", item.guid);
         println!("{:?}", item.link);
@@ -28,7 +49,6 @@ fn main() {
                     .get("description")
                     .and_then(|d| d[0].value.to_owned()));
             }
-            /*{"media": {"content": [Extension { name: "media:content", value: None, attrs: {"fileSize": "305683", "medium": "image", "type": "image/jpeg", "url": "https://files.mastodon.green/media_attachments/files/109/681/669/125/176/877/original/83a92e31941b9c90.jpeg"}, children: {"description": [Extension { name: "media:description", value: Some("A view toward  Brighton West Pier remains. A blue sky, a calm sea, but there’s a red danger sign on the beach still, asking people to keep away from the waves."), attrs: {"type": "plain"}, children: {} }], "rating": [Extension { name: "media:rating", value: Some("nonadult"), attrs: {"scheme": "urn:simple"}, children: {} }]} }]}} */
         }
     }
 }
