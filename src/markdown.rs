@@ -78,6 +78,10 @@ fn filename_date(pub_date: &str) -> Result<String, ParseError> {
     DateTime::parse_from_rfc2822(pub_date).map(|dt| dt.format(filename_format).to_string())
 }
 
+fn truncate_media_url(url: &str) -> String {
+    url.replace("https://files.", "/")
+}
+
 // 2006-12-12-tweet-996943.md
 
 #[cfg(test)]
@@ -135,5 +139,12 @@ The success of an ASM work is often determined by the relationship a viewer has 
 "#;
 
         assert_eq!(expected, item.as_markdown(|x| x.to_string()).unwrap());
+    }
+
+    #[test]
+    fn test_convert_media_url_to_path_by_truncation() {
+        let input = "https://files.mastodon.green/media_attachments/files/109/766/538/533/129/824/original/3f22b7baa3a7d3d6.jpeg";
+        let expected = "/mastodon.green/media_attachments/files/109/766/538/533/129/824/original/3f22b7baa3a7d3d6.jpeg";
+        assert_eq!(expected.to_string(), truncate_media_url(input));
     }
 }
