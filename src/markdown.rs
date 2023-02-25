@@ -18,15 +18,7 @@ impl AsMarkdown for Item {
             if ext_type == "media" {
                 let medias: &Vec<Extension> = ext_map.get("content").unwrap();
                 for media in medias.iter() {
-                    let media_type = media.attrs.get("type").unwrap();
-                    let media_url = media.attrs.get("url").unwrap();
-                    let media_description = media
-                        .children
-                        .get("description")
-                        .and_then(|d| d[0].value.to_owned())
-                        .unwrap_or("".to_owned());
-
-                    let markdown_media = format!("![{media_description}]({media_url})\n");
+                    let markdown_media = to_markdown_media(media);
                     markdown_medias.push(markdown_media);
                 }
             }
@@ -49,13 +41,30 @@ date: {date}
     }
 }
 
+fn to_markdown_media(media: &Extension) -> String {
+    let media_type = media.attrs.get("type").unwrap();
+    let media_url = media.attrs.get("url").unwrap();
+    let media_description = media
+        .children
+        .get("description")
+        .and_then(|d| d[0].value.to_owned())
+        .unwrap_or("".to_owned());
+
+    if media_type.starts_with("video/") {
+        // RSS does not appear to include media width or height, so we just pick a reasonable height here
+        format!("<video height='720' controls=''><source src='{media_url}' type='{media_type}'><p>{media_description}</p></video>")
+    } else {
+        format!("![{media_description}]({media_url})\n")
+    }
+}
+
 fn title_date(pub_date: &str) -> Result<String, ParseError> {
     let title_format = "%a %d %b %Y %H:%M"; // Tue 12 Dec 2006 11:02
     DateTime::parse_from_rfc2822(pub_date).map(|dt| dt.format(title_format).to_string())
 }
 
 fn formal_date(pub_date: &str) -> Result<String, ParseError> {
-    DateTime::parse_from_rfc2822(pub_date).map(|dt| dt.to_rfc3339().to_string())
+    DateTime::parse_from_rfc2822(pub_date).map(|dt| dt.to_rfc3339())
 }
 
 fn filename_date(pub_date: &str) -> Result<String, ParseError> {
