@@ -2,11 +2,16 @@ use chrono::{DateTime, ParseError};
 use rss::{extension::Extension, Item};
 
 trait AsMarkdown {
-    fn as_markdown(&self) -> Result<String, ParseError>;
+    fn as_markdown<F>(&self, media_url_to_path: F) -> Result<String, ParseError>
+    where
+        F: Fn(&str) -> String;
 }
 
 impl AsMarkdown for Item {
-    fn as_markdown(&self) -> Result<String, ParseError> {
+    fn as_markdown<F: Fn(&str) -> String>(
+        &self,
+        media_url_to_path: F,
+    ) -> Result<String, ParseError> {
         let title = title_date(self.pub_date().unwrap())?;
         let msg = self.description().unwrap();
         let instance = "mastodon.green";
@@ -18,7 +23,7 @@ impl AsMarkdown for Item {
             if ext_type == "media" {
                 let medias: &Vec<Extension> = ext_map.get("content").unwrap();
                 for media in medias.iter() {
-                    let markdown_media = to_markdown_media(media);
+                    let markdown_media = to_markdown_media(media, &media_url_to_path);
                     markdown_medias.push(markdown_media);
                 }
             }
@@ -41,9 +46,10 @@ date: {date}
     }
 }
 
-fn to_markdown_media(media: &Extension) -> String {
+fn to_markdown_media<F: Fn(&str) -> String>(media: &Extension, media_url_to_path: F) -> String {
     let media_type = media.attrs.get("type").unwrap();
     let media_url = media.attrs.get("url").unwrap();
+    let media_path = media_url_to_path(media_url);
     let media_description = media
         .children
         .get("description")
@@ -52,9 +58,9 @@ fn to_markdown_media(media: &Extension) -> String {
 
     if media_type.starts_with("video/") {
         // RSS does not appear to include media width or height, so we just pick a reasonable height here
-        format!("<video height='720' controls=''><source src='{media_url}' type='{media_type}'><p>{media_description}</p></video>")
+        format!("<video height='720' controls=''><source src='{media_path}' type='{media_type}'><p>{media_description}</p></video>")
     } else {
-        format!("![{media_description}]({media_url})\n")
+        format!("![{media_description}]({media_path})\n")
     }
 }
 
@@ -128,6 +134,6 @@ In 1988, the Icelandic artist Björk was the lead singer of The Sugarcubes. In t
 The success of an ASM work is often determined by the relationship a viewer has to the ASMRtist through the screen. In this film, Björk's explanation is both generous and empathetic.”](https://files.mastodon.green/media_attachments/files/109/808/524/733/756/242/original/4f4f643fae86839f.jpeg)
 "#;
 
-        assert_eq!(expected, item.as_markdown().unwrap());
+        assert_eq!(expected, item.as_markdown(|x| x.to_string()).unwrap());
     }
 }
