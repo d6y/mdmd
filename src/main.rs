@@ -5,11 +5,10 @@ use crate::feed::ChannelSurf;
 
 mod feed;
 mod markdown;
-
+mod download;
 use markdown::AsMarkdown;
 
 fn main() {
-    println!("Hello, world!");
 
     let rss_str = include_str!("../rss/example01.rss");
     let channel = Channel::from_str(rss_str).unwrap();
