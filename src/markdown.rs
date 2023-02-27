@@ -1,6 +1,8 @@
 use chrono::{DateTime, ParseError};
 use rss::{extension::Extension, Item};
 
+use crate::feed::ItemSurf;
+
 pub trait AsMarkdown {
     fn as_markdown<F>(&self, media_url_to_path: F) -> Result<String, ParseError>
     where
@@ -19,14 +21,9 @@ impl AsMarkdown for Item {
         let date = formal_date(self.pub_date().unwrap())?;
 
         let mut markdown_medias = Vec::new();
-        for (ext_type, ext_map) in self.extensions.iter() {
-            if ext_type == "media" {
-                let medias: &Vec<Extension> = ext_map.get("content").unwrap();
-                for media in medias.iter() {
-                    let markdown_media = to_markdown_media(media, &media_url_to_path);
-                    markdown_medias.push(markdown_media);
-                }
-            }
+        for media in self.medias() {
+            let markdown_media = to_markdown_media(media, &media_url_to_path);
+            markdown_medias.push(markdown_media);
         }
 
         let images = markdown_medias.join("\n");

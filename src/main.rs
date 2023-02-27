@@ -1,35 +1,39 @@
+use download::MediaCopy;
 use rss::{extension::Extension, Channel, Guid};
-use std::str::FromStr;
+use std::{error::Error, path::Path, str::FromStr};
 
 use crate::feed::ChannelSurf;
 
+mod download;
 mod feed;
 mod markdown;
-mod download;
 use markdown::AsMarkdown;
 
-fn main() {
-
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
     let rss_str = include_str!("../rss/example01.rss");
     let channel = Channel::from_str(rss_str).unwrap();
 
     let from: Guid = Guid {
-        value: "https://mastodon.green/@d6y/109808565659434052".to_string(),
+        value: "https://mastodon.green/@d6y/109818375938647316".to_string(),
         permalink: true,
     };
 
-    for guid in channel.find_next_guids(&from) {
-        println!(
-            "{:?}",
-            channel
-                .find_by_guid(guid)
-                .unwrap()
-                .as_markdown(markdown::truncate_media_url)
-        )
+    let working_dir = Path::new("./tmp");
+
+    for guid in channel.find_next_guids(&from).iter().take(1) {
+        let item = channel.find_by_guid(guid).unwrap();
+
+        let media_map = item.download_all(working_dir).await?;
+
+        println!("{:?}", item.as_markdown(markdown::truncate_media_url));
+        println!("{:?}", media_map);
     }
+
+    Ok(())
 }
 
-fn dump(channel: Channel) {
+fn _dump(channel: Channel) {
     for item in channel.items() {
         println!("{:?}", item.guid);
         println!("{:?}", item.link);

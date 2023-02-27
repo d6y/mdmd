@@ -1,4 +1,4 @@
-use rss::{Channel, Guid, Item};
+use rss::{extension::Extension, Channel, Guid, Item};
 
 pub trait ChannelSurf {
     /// Search the channel for the first GUID lexically greater than the given GUID,
@@ -10,6 +10,25 @@ pub trait ChannelSurf {
     fn find_next_guids(&self, guid: &Guid) -> Vec<&Guid>;
 
     fn find_by_guid(&self, guid: &Guid) -> Option<&Item>;
+}
+
+pub trait ItemSurf {
+    fn medias(&self) -> Vec<&Extension>;
+}
+
+impl ItemSurf for Item {
+    fn medias(&self) -> Vec<&Extension> {
+        let mut medias = Vec::new();
+        for (ext_type, ext_map) in self.extensions.iter() {
+            if ext_type == "media" {
+                let xs: &Vec<Extension> = ext_map.get("content").unwrap();
+                for media in xs.iter() {
+                    medias.push(media);
+                }
+            }
+        }
+        medias
+    }
 }
 
 impl ChannelSurf for Channel {
