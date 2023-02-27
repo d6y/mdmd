@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let media_map = item.download_all(working_dir).await?;
 
         println!("{:?}", item.as_markdown(markdown::truncate_media_url));
-        println!("{:?}", media_map);
+        println!("{media_map:?}");
     }
 
     Ok(())

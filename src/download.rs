@@ -52,7 +52,7 @@ impl MediaCopy for Item {
             let mut file = File::create(&local_file).await?;
             file.write_all(&bytes).await?;
 
-            map.push(&media_url, &local_file);
+            map.push(media_url, &local_file);
         }
 
         Ok(map)
