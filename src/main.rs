@@ -12,13 +12,12 @@ use markdown::AsMarkdown;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    let url = "https://richard.dallaway.com/mastodon.green/id.txt";
+
     let rss_str = include_str!("../rss/example01.rss");
     let channel = Channel::from_str(rss_str).unwrap();
 
-    let from: Guid = Guid {
-        value: "https://mastodon.green/@d6y/109818375938647316".to_string(),
-        permalink: true,
-    };
+    let from: Guid = download::last_guid(url).await?;
 
     let working_dir = Path::new("./tmp");
 
@@ -27,11 +26,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let id = item.link().and_then(|url| url.split('/').last()).unwrap();
         let filename = markdown::post_filename(item.pub_date().unwrap(), id)?;
 
-        let media_map = item.download_all(working_dir).await?;
+        // let media_map = item.download_all(working_dir).await?;
 
         println!("{filename}");
         println!("{:?}", item.as_markdown(markdown::truncate_media_url));
-        println!("{media_map:?}");
+        // println!("{media_map:?}");
     }
 
     Ok(())

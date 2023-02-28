@@ -7,7 +7,19 @@ use tokio::io::AsyncWriteExt;
 
 use crate::feed::ItemSurf;
 use reqwest::Client;
-use rss::Item;
+use rss::{Guid, Item};
+
+pub async fn last_guid(url: &str) -> Result<Guid, Box<dyn Error>> {
+    let client = Client::new();
+    let response = client.get(url).send().await?;
+    let value = response.text().await?;
+
+    let from: Guid = Guid {
+        value: value,
+        permalink: true,
+    };
+    Ok(from)
+}
 
 #[derive(Debug)]
 pub struct LocalMedia {
