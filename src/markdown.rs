@@ -70,16 +70,15 @@ fn formal_date(pub_date: &str) -> Result<String, ParseError> {
     DateTime::parse_from_rfc2822(pub_date).map(|dt| dt.to_rfc3339())
 }
 
-fn filename_date(pub_date: &str) -> Result<String, ParseError> {
+fn post_filename(pub_date: &str, id: &str) -> Result<String, ParseError> {
     let filename_format = "%Y-%m-%d"; // 2005-12-30
-    DateTime::parse_from_rfc2822(pub_date).map(|dt| dt.format(filename_format).to_string())
+    let filename_date = DateTime::parse_from_rfc2822(pub_date).map(|dt| dt.format(filename_format).to_string())?;
+    Ok(format!("{filename_date}-toot-{id}.md"))
 }
 
 pub fn truncate_media_url(url: &str) -> String {
     url.replace("https://files.", "/")
 }
-
-// 2006-12-12-tweet-996943.md
 
 #[cfg(test)]
 mod tests {
@@ -101,10 +100,10 @@ mod tests {
     }
 
     #[test]
-    fn test_convert_to_filename_date() {
+    fn test_convert_to_filename() {
         assert_eq!(
-            "2023-02-04",
-            filename_date("Sat, 04 Feb 2023 19:01:20 +0000").unwrap()
+            "2023-02-04-toot-1234.md",
+            post_filename("Sat, 04 Feb 2023 19:01:20 +0000", "1234").unwrap()
         );
     }
 
