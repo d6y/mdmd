@@ -1,3 +1,4 @@
+use clap::Parser;
 use download::MediaCopy;
 use rss::{extension::Extension, Channel, Guid};
 use std::{error::Error, path::Path, str::FromStr};
@@ -10,14 +11,36 @@ mod github;
 mod markdown;
 use markdown::AsMarkdown;
 
+#[derive(Parser, Debug)]
+struct Args {
+    /// RSS Feed to chec
+    #[arg(short, long, default_value = "http://mastodon.green/@d6y.rss")]
+    feed: String,
+
+    /// Where to find the last RSS GUID we processed
+    #[arg(
+        long,
+        default_value = "https://richard.dallaway.com/mastodon.green/id.txt"
+    )]
+    last_guid_url: String,
+
+    /// Where to find the source of that file in GIT
+    #[arg(long, default_value = "/static/mastodon.green/id.txt")]
+    last_guid_git_path: String,
+
+    /// Media path prefix for images
+    #[arg(short, long, default_value = "/static")]
+    media_path_prefix: String,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let url = "https://richard.dallaway.com/mastodon.green/id.txt";
+    let args = Args::parse();
 
     let rss_str = include_str!("../rss/example01.rss");
     let channel = Channel::from_str(rss_str).unwrap();
 
-    let from: Guid = download::last_guid(url).await?;
+    let from: Guid = download::last_guid(&args.last_guid_url).await?;
 
     let working_dir = Path::new("./tmp");
 
@@ -30,7 +53,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let markdown = item.as_markdown(markdown::truncate_media_url)?;
         let path_map = media_map
             .apply(markdown::truncate_media_url)
-            .apply(|u| format!("/static{u}"));
+            .apply(|u| format!("{}{u}", &args.media_path_prefix));
 
         println!("{filename}");
         println!("{markdown}");
