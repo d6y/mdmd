@@ -6,6 +6,7 @@ use crate::feed::ChannelSurf;
 
 mod download;
 mod feed;
+mod github;
 mod markdown;
 use markdown::AsMarkdown;
 
