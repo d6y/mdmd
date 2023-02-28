@@ -39,6 +39,14 @@ impl LocalMedia {
         self.urls.push(url.to_owned());
         self.local_files.push(local_file.to_owned());
     }
+
+    pub fn apply<F: Fn(&str) -> String>(&self, f: F) -> LocalMedia {
+        let new_urls = self.urls.iter().map(|u| f(u)).collect();
+        LocalMedia {
+            urls: new_urls,
+            local_files: self.local_files.to_owned(),
+        }
+    }
 }
 
 #[async_trait]

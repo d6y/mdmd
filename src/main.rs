@@ -26,11 +26,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let id = item.link().and_then(|url| url.split('/').last()).unwrap();
         let filename = markdown::post_filename(item.pub_date().unwrap(), id)?;
 
-        // let media_map = item.download_all(working_dir).await?;
+        let media_map = item.download_all(working_dir).await?;
+        let markdown = item.as_markdown(markdown::truncate_media_url)?;
+        let path_map = media_map
+            .apply(markdown::truncate_media_url)
+            .apply(|u| format!("/static{u}"));
 
         println!("{filename}");
-        println!("{:?}", item.as_markdown(markdown::truncate_media_url));
-        // println!("{media_map:?}");
+        println!("{markdown}");
+        println!("{path_map:?}");
     }
 
     Ok(())
