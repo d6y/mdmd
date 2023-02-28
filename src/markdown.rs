@@ -72,7 +72,8 @@ fn formal_date(pub_date: &str) -> Result<String, ParseError> {
 
 pub fn post_filename(pub_date: &str, id: &str) -> Result<String, ParseError> {
     let filename_format = "%Y-%m-%d"; // 2005-12-30
-    let filename_date = DateTime::parse_from_rfc2822(pub_date).map(|dt| dt.format(filename_format).to_string())?;
+    let filename_date =
+        DateTime::parse_from_rfc2822(pub_date).map(|dt| dt.format(filename_format).to_string())?;
     Ok(format!("{filename_date}-toot-{id}.md"))
 }
 

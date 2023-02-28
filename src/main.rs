@@ -23,7 +23,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     for guid in channel.find_next_guids(&from).iter().take(1) {
         let item = channel.find_by_guid(guid).unwrap();
-        let id = item.link().and_then(|url| url.split("/").last()).unwrap();
+        let id = item.link().and_then(|url| url.split('/').last()).unwrap();
         let filename = markdown::post_filename(item.pub_date().unwrap(), id)?;
 
         let media_map = item.download_all(working_dir).await?;
