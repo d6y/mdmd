@@ -27,6 +27,15 @@ pub struct LocalMedia {
     local_files: Vec<PathBuf>,
 }
 
+impl<'a> IntoIterator for &'a LocalMedia {
+    type Item = (&'a String, &'a PathBuf);
+    type IntoIter = std::iter::Zip<std::slice::Iter<'a, String>, std::slice::Iter<'a, PathBuf>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.urls.iter().zip(self.local_files.iter())
+    }
+}
+
 impl LocalMedia {
     fn new() -> LocalMedia {
         LocalMedia {

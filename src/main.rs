@@ -31,6 +31,22 @@ struct Args {
     /// Media path prefix for images
     #[arg(short, long, default_value = "/static")]
     media_path_prefix: String,
+
+    /// Post path prefix for markdown
+    #[arg(short, long, default_value = "/content/microposts")]
+    post_path: String,
+
+    /// Github bearer token
+    #[arg(long, env = "GITHUB_TOKEN", hide_env_values = true)]
+    pub github_token: String,
+
+    /// Github repository in the form "user/repo"
+    #[arg(long, env = "GITHUB_REPO")]
+    pub github_repo: String,
+
+    /// Github repository branch
+    #[arg(long, env = "GITHUB_BRANCH", default_value = "main")]
+    pub github_branch: String,
 }
 
 #[tokio::main]
@@ -44,10 +60,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let working_dir = Path::new("./tmp");
 
+    let gh = github::Github::new(&args.github_token, &args.github_repo, &args.github_branch);
+
     for guid in channel.find_next_guids(&from).iter().take(1) {
         let item = channel.find_by_guid(guid).unwrap();
         let id = item.link().and_then(|url| url.split('/').last()).unwrap();
+
         let filename = markdown::post_filename(item.pub_date().unwrap(), id)?;
+        let markdown_path = format!("{}/{filename}", &args.post_path);
 
         let media_map = item.download_all(working_dir).await?;
         let markdown = item.as_markdown(markdown::truncate_media_url)?;
@@ -55,9 +75,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .apply(markdown::truncate_media_url)
             .apply(|u| format!("{}{u}", &args.media_path_prefix));
 
+        let mut new_content: Vec<github::NewContent> = path_map
+            .into_iter()
+            .map(|(path, file)| github::NewContent::path(path, file))
+            .collect();
+
+        let md_content = github::NewContent::text(&markdown_path, &markdown);
+        new_content.push(md_content);
+
         println!("{filename}");
-        println!("{markdown}");
-        println!("{path_map:?}");
+        println!("{new_content:?}");
     }
 
     Ok(())

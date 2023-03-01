@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use base64::{engine::general_purpose, Engine};
 use serde::Deserialize;
 use serde_json::json;
@@ -15,6 +17,33 @@ impl Github {
             token: token.to_owned(),
             repo: repo.to_owned(),
             branch: branch.to_owned(),
+        }
+    }
+}
+
+#[derive(Debug)]
+enum Content<'a> {
+    Path(&'a PathBuf),
+    Str(&'a str),
+}
+#[derive(Debug)]
+pub struct NewContent<'c> {
+    git_path: String,
+    content: Content<'c>,
+}
+
+impl<'c> NewContent<'c> {
+    pub fn path(git_path: &str, path: &'c PathBuf) -> NewContent<'c> {
+        NewContent {
+            git_path: git_path.to_owned(),
+            content: Content::Path(path),
+        }
+    }
+
+    pub fn text(git_path: &str, str: &'c str) -> NewContent<'c> {
+        NewContent {
+            git_path: git_path.to_owned(),
+            content: Content::Str(str),
         }
     }
 }
