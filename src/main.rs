@@ -17,10 +17,10 @@ struct Args {
     #[arg(short, long, default_value = "http://mastodon.green/@d6y.rss")]
     feed: String,
 
-    /// Where to find the last RSS GUID we processed
+    /// Where to find the last RSS GUID we processed? A URL that changes as fast as a git commit.
     #[arg(
         long,
-        default_value = "https://richard.dallaway.com/mastodon.green/id.txt"
+        default_value = "https://raw.githubusercontent.com/d6y/richard.dallaway.com/main/static/mastodon.green/id.txt"
     )]
     last_guid_url: String,
 

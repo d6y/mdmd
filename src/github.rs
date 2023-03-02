@@ -62,6 +62,20 @@ struct RepoObject {
 }
 
 impl Github {
+    /*
+    query {
+      viewer {
+        repository(name: "richard.dallaway.com") {
+            object(expression: "main:static/mastodon.green/id.txt") {
+                ... on Blob {
+                    text
+            }
+          }
+        }
+    }
+    }
+     */
+
     pub async fn commit(
         &self,
         commit_msg: &str,
@@ -89,7 +103,6 @@ impl Github {
             .text()
             .await?;
 
-        // TODO: panic or pass on the error?
         match serde_json::from_str::<RepoState>(&res) {
             Ok(state) => Ok(state.object.sha),
             Err(_) => panic!("Unexpected JSON from get_oid call: {}", res),

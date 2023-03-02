@@ -3,6 +3,7 @@
 Plan:
 
 - [x] Fetch "last" post URL from a URL (e.g.., in github) `/{instance-name}/id.txt`
+- [ ] Fetch "last" GUI from git directly (as publishing takes time)
 - [x] Read local RSS feed file
 - [ ] Fetch remote RSS feed
 - [x] Find "more recent" posts in feed
@@ -12,7 +13,7 @@ Plan:
    - [x] Fetches latest github revision
    - [x] Commit markdown 
    - [x] ...and media files to github
-   - [ ] Updates github id.txt with latest URL
+   - [x] Updates github id.txt with latest URL
 - [ ] Clean up local files
 
 # Useful links
