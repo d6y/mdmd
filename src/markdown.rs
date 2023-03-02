@@ -29,12 +29,12 @@ impl AsMarkdown for Item {
         let images = markdown_medias.join("\n");
 
         Ok(format!(
-            r#"--
+            r#"---
 title: {title}
 instance: {instance}
 toot_url: {url}
 date: {date}
---
+---
 
 {msg}
 
@@ -119,12 +119,12 @@ mod tests {
 
         let item = channel.find_by_guid(&from).unwrap();
 
-        let expected = r#"--
+        let expected = r#"---
 title: Sat 04 Feb 2023 21:22
 instance: mastodon.green
 toot_url: https://mastodon.green/@d6y/109808565659434052
 date: 2023-02-04T21:22:20+00:00
---
+---
 
 <p>A visit to the ASMR exhibit at the Design Museum. Yes, of course there was a Bob Ross room (as part of the unintentional ASMR section of the exhibit).</p><p><a href="https://designmuseum.org/exhibitions/weird-sensation-feels-good-the-world-of-asmr" target="_blank" rel="nofollow noopener noreferrer"><span class="invisible">https://</span><span class="ellipsis">designmuseum.org/exhibitions/w</span><span class="invisible">eird-sensation-feels-good-the-world-of-asmr</span></a></p>
 
