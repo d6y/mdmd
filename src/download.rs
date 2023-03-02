@@ -15,7 +15,7 @@ pub async fn last_guid(url: &str) -> Result<Guid, Box<dyn Error>> {
     let value = response.text().await?;
 
     let from: Guid = Guid {
-        value: value,
+        value,
         permalink: true,
     };
     Ok(from)

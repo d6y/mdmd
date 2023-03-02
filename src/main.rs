@@ -1,6 +1,6 @@
 use clap::Parser;
 use download::MediaCopy;
-use rss::{extension::Extension, Channel, Guid};
+use rss::{Channel, Guid};
 use std::{error::Error, path::Path, str::FromStr};
 
 use crate::feed::ChannelSurf;
@@ -29,11 +29,11 @@ struct Args {
     last_guid_git_path: String,
 
     /// Media path prefix for images
-    #[arg(short, long, default_value = "/static")]
+    #[arg(short, long, default_value = "static")]
     media_path_prefix: String,
 
-    /// Post path prefix for markdown
-    #[arg(short, long, default_value = "/content/microposts")]
+    /// Post path prefix for markdown. Note git paths are rooted in "" so no leading /
+    #[arg(short, long, default_value = "content/microposts")]
     post_path: String,
 
     /// Github bearer token
@@ -83,32 +83,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let md_content = github::NewContent::text(&markdown_path, &markdown);
         new_content.push(md_content);
 
-        println!("{filename}");
-        println!("{new_content:?}");
+        gh.commit(&format!("add {filename}"), &new_content).await?;
     }
 
     Ok(())
-}
-
-fn _dump(channel: Channel) {
-    for item in channel.items() {
-        println!("{:?}", item.guid);
-        println!("{:?}", item.link);
-        println!("{:?}", item.description);
-        println!("{:?}", item.pub_date);
-        //println!("{:?}", item.extensions);
-        for (ext_type, ext_map) in item.extensions.iter() {
-            println!("{ext_type:?}");
-            // vec<Extension>
-            let xs: &Vec<Extension> = ext_map.get("content").unwrap();
-            for x in xs {
-                dbg!(x.attrs.get("type"));
-                dbg!(x.attrs.get("url"));
-                dbg!(x
-                    .children
-                    .get("description")
-                    .and_then(|d| d[0].value.to_owned()));
-            }
-        }
-    }
 }

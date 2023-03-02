@@ -1,9 +1,12 @@
+use std::error::Error;
 use std::path::PathBuf;
 
 use base64::{engine::general_purpose, Engine};
 use serde::Deserialize;
 use serde_json::json;
 use serde_json::Value;
+use tokio::fs::File;
+use tokio::io::AsyncReadExt;
 
 pub struct Github {
     token: String,
@@ -21,29 +24,29 @@ impl Github {
     }
 }
 
-#[derive(Debug)]
-enum Content<'a> {
-    Path(&'a PathBuf),
-    Str(&'a str),
+#[derive(Debug, Clone)]
+enum Content {
+    Path(PathBuf),
+    Str(String),
 }
-#[derive(Debug)]
-pub struct NewContent<'c> {
+#[derive(Debug, Clone)]
+pub struct NewContent {
     git_path: String,
-    content: Content<'c>,
+    content: Content,
 }
 
-impl<'c> NewContent<'c> {
-    pub fn path(git_path: &str, path: &'c PathBuf) -> NewContent<'c> {
+impl NewContent {
+    pub fn path(git_path: &str, path: &PathBuf) -> NewContent {
         NewContent {
             git_path: git_path.to_owned(),
-            content: Content::Path(path),
+            content: Content::Path(path.to_owned()),
         }
     }
 
-    pub fn text(git_path: &str, str: &'c str) -> NewContent<'c> {
+    pub fn text(git_path: &str, str: &str) -> NewContent {
         NewContent {
             git_path: git_path.to_owned(),
-            content: Content::Str(str),
+            content: Content::Str(str.to_owned()),
         }
     }
 }
@@ -61,12 +64,11 @@ struct RepoObject {
 impl Github {
     pub async fn commit(
         &self,
-        path_name: &str,
-        content: &str,
         commit_msg: &str,
+        content: &[NewContent],
     ) -> Result<(), Box<dyn std::error::Error>> {
         let oid = self.get_oid().await?;
-        self.add_file(&oid, path_name, content, commit_msg).await
+        self.add_files(&oid, commit_msg, content).await
     }
 
     async fn get_oid(&self) -> Result<String, Box<dyn std::error::Error>> {
@@ -94,14 +96,13 @@ impl Github {
         }
     }
 
-    async fn add_file(
+    async fn add_files(
         &self,
         oid: &str,
-        path_name: &str,
-        content: &str,
         commit_msg: &str,
+        content: &[NewContent],
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let payload: String = self.mutation_json(oid, path_name, content, commit_msg);
+        let payload: String = self.mutation_json(oid, commit_msg, content).await?;
 
         let client = reqwest::Client::new();
 
@@ -126,10 +127,39 @@ impl Github {
         }
     }
 
-    fn mutation_json(&self, oid: &str, path_name: &str, content: &str, commit_msg: &str) -> String {
+    async fn read_file(path: &PathBuf) -> Result<Vec<u8>, Box<dyn Error>> {
+        let mut buf = Vec::new();
+        File::open(path).await?.read_to_end(&mut buf).await?;
+        Ok(buf)
+    }
+
+    async fn to_addition(content: &NewContent) -> Result<Value, Box<dyn Error>> {
         // "The contents of a FileAddition must be encoded using RFC 4648 compliant base64,
         // i.e. correct padding is required and no characters outside the standard alphabet may be used.
-        let b64_content = general_purpose::STANDARD.encode(content);
+        let b64_content = match &content.content {
+            Content::Path(p) => general_purpose::STANDARD.encode(Github::read_file(p).await?),
+            Content::Str(s) => general_purpose::STANDARD.encode(s),
+        };
+
+        Ok(json!({
+             "path": format!("{}", content.git_path),
+             "contents": format!("{}", b64_content),
+        }))
+    }
+
+    async fn mutation_json(
+        &self,
+        oid: &str,
+        commit_msg: &str,
+        contents: &[NewContent],
+    ) -> Result<String, Box<dyn Error>> {
+        let mut additions = Vec::new();
+        for content in contents {
+            let val = Github::to_addition(content).await?;
+            additions.push(val);
+        }
+
+        // NB: CreateBlob+createTree+CreateCommitOnBranchInput+updateRef may be an alaternative if file size is an issue. 
 
         let payload = json!({
             "query": "mutation ($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { url } } }",
@@ -139,18 +169,15 @@ impl Github {
                     "repositoryNameWithOwner": format!("{}", self.repo),
                     "branchName": format!("{}", self.branch),
                 },
-                "message": { "headline": format!("{}", commit_msg) },
+                "message": { "headline": format!("{commit_msg}") },
                 "fileChanges": {
-                    "additions": [ {
-                        "path": format!("{}", path_name),
-                        "contents": format!("{}", b64_content),
-                    } ]
+                    "additions": additions
                 },
-                "expectedHeadOid": format!("{}", oid)
+                "expectedHeadOid": format!("{oid}")
             }
             }
         });
 
-        payload.to_string()
+        Ok(payload.to_string())
     }
 }
