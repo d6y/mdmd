@@ -24,11 +24,11 @@ struct Args {
     )]
     last_guid_url: String,
 
-    /// Where to find the source of that file in GIT
-    #[arg(long, default_value = "/static/mastodon.green/id.txt")]
+    /// Where to find the source of that file in Gpath. Note git paths are rooted in "" so no leading /
+    #[arg(long, default_value = "static/mastodon.green/id.txt")]
     last_guid_git_path: String,
 
-    /// Media path prefix for images
+    /// Media path prefix for images (note git paths are rooted in "" so no leading /)
     #[arg(short, long, default_value = "static")]
     media_path_prefix: String,
 
@@ -63,18 +63,22 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let gh = github::Github::new(&args.github_token, &args.github_repo, &args.github_branch);
 
     for guid in channel.find_next_guids(&from).iter().take(1) {
+        // Locate the basics for this item:
         let item = channel.find_by_guid(guid).unwrap();
         let id = item.link().and_then(|url| url.split('/').last()).unwrap();
 
+        // Prepare the markdown:
         let filename = markdown::post_filename(item.pub_date().unwrap(), id)?;
         let markdown_path = format!("{}/{filename}", &args.post_path);
 
+        // Fetch any media:
         let media_map = item.download_all(working_dir).await?;
         let markdown = item.as_markdown(markdown::truncate_media_url)?;
         let path_map = media_map
             .apply(markdown::truncate_media_url)
             .apply(|u| format!("{}{u}", &args.media_path_prefix));
 
+        // Convert into Github new content:
         let mut new_content: Vec<github::NewContent> = path_map
             .into_iter()
             .map(|(path, file)| github::NewContent::path(path, file))
@@ -83,6 +87,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let md_content = github::NewContent::text(&markdown_path, &markdown);
         new_content.push(md_content);
 
+        // ...including updating the next guid:
+        let id_content = github::NewContent::text(&args.last_guid_git_path, guid.value());
+        new_content.push(id_content);
+
+        println!("{filename}");
         gh.commit(&format!("add {filename}"), &new_content).await?;
     }
 

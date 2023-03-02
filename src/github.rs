@@ -159,7 +159,7 @@ impl Github {
             additions.push(val);
         }
 
-        // NB: CreateBlob+createTree+CreateCommitOnBranchInput+updateRef may be an alaternative if file size is an issue. 
+        // NB: CreateBlob+createTree+CreateCommitOnBranchInput+updateRef may be an alaternative if file size is an issue.
 
         let payload = json!({
             "query": "mutation ($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { url } } }",
