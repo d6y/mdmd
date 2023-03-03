@@ -1,6 +1,6 @@
 use clap::Parser;
 use download::MediaCopy;
-use rss::{Channel, Guid};
+use rss::Channel;
 use std::{error::Error, path::Path, str::FromStr};
 
 use crate::feed::ChannelSurf;
@@ -16,13 +16,6 @@ struct Args {
     /// RSS Feed to chec
     #[arg(short, long, default_value = "http://mastodon.green/@d6y.rss")]
     feed: String,
-
-    /// Where to find the last RSS GUID we processed? A URL that changes as fast as a git commit.
-    #[arg(
-        long,
-        default_value = "https://raw.githubusercontent.com/d6y/richard.dallaway.com/main/static/mastodon.green/id.txt"
-    )]
-    last_guid_url: String,
 
     /// Where to find the source of that file in Gpath. Note git paths are rooted in "" so no leading /
     #[arg(long, default_value = "static/mastodon.green/id.txt")]
@@ -56,11 +49,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let rss_str = include_str!("../rss/example01.rss");
     let channel = Channel::from_str(rss_str).unwrap();
 
-    let from: Guid = download::last_guid(&args.last_guid_url).await?;
+    let gh = github::Github::new(&args.github_token, &args.github_repo, &args.github_branch);
+    let from = gh.get_last_guid(&args.last_guid_git_path).await?;
 
     let working_dir = Path::new("./tmp");
-
-    let gh = github::Github::new(&args.github_token, &args.github_repo, &args.github_branch);
 
     for guid in channel.find_next_guids(&from).iter().take(1) {
         // Locate the basics for this item:

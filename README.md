@@ -3,7 +3,7 @@
 Plan:
 
 - [x] Fetch "last" post URL from a URL (e.g.., in github) `/{instance-name}/id.txt`
-- [ ] Fetch "last" GUI from git directly (as publishing takes time)
+- [x] Fetch "last" GUI from git directly (as publishing takes time)
 - [x] Read local RSS feed file
 - [ ] Fetch remote RSS feed
 - [x] Find "more recent" posts in feed

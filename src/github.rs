@@ -2,15 +2,18 @@ use std::error::Error;
 use std::path::PathBuf;
 
 use base64::{engine::general_purpose, Engine};
+use rss::Guid;
 use serde::Deserialize;
 use serde_json::json;
 use serde_json::Value;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
+/// Client configuration
+
 pub struct Github {
     token: String,
-    repo: String,
+    repo: String, // Format: user/repo
     branch: String,
 }
 
@@ -24,11 +27,14 @@ impl Github {
     }
 }
 
+/// New file (addition) representation
+
 #[derive(Debug, Clone)]
 enum Content {
     Path(PathBuf),
     Str(String),
 }
+
 #[derive(Debug, Clone)]
 pub struct NewContent {
     git_path: String,
@@ -51,6 +57,8 @@ impl NewContent {
     }
 }
 
+/// Github responses
+
 #[derive(Deserialize, Debug)]
 struct RepoState {
     object: RepoObject,
@@ -62,19 +70,57 @@ struct RepoObject {
 }
 
 impl Github {
-    /*
-    query {
-      viewer {
-        repository(name: "richard.dallaway.com") {
-            object(expression: "main:static/mastodon.green/id.txt") {
-                ... on Blob {
-                    text
+    pub async fn get_last_guid(&self, path: &str) -> Result<Guid, Box<dyn Error>> {
+        let client = reqwest::Client::new();
+
+        // Remove owner, just repository name:
+        let name = self.repo.split('/').last().unwrap();
+
+        let expr = format!("{}:{}", self.branch, path);
+
+        let query = json!({
+            "query": r#"
+                query ($name: String!, $expr: String!) {
+                    viewer {
+                    repository(name: $name) {
+                        object(expression: $expr) {
+                            ... on Blob {
+                                text
+                            }
+                        }
+                    } }
+                }
+            "#,
+            "variables": {
+                "name": name,
+                "expr": expr
             }
-          }
-        }
+        });
+
+        let res = client
+            .post("https://api.github.com/graphql")
+            .header(
+                reqwest::header::AUTHORIZATION,
+                format!("bearer {}", self.token),
+            )
+            .header(reqwest::header::USER_AGENT, &self.repo)
+            .json(&query)
+            .send()
+            .await?;
+
+        let response_body: Value = res.json().await?;
+
+        let text = response_body["data"]["viewer"]["repository"]["object"]["text"]
+            .as_str()
+            .expect(&format!("Unable to extract text from {response_body:?}"));
+
+        let guid: Guid = Guid {
+            value: text.to_owned(),
+            permalink: true,
+        };
+
+        Ok(guid)
     }
-    }
-     */
 
     pub async fn commit(
         &self,
