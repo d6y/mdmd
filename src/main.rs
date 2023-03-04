@@ -43,11 +43,9 @@ struct Args {
     #[arg(long, env = "GITHUB_BRANCH", default_value = "main")]
     pub github_branch: String,
 
-
     /// Number of posts to read in this run
     #[arg(long, short, env = "NUM_POSTS", default_value = "1")]
     pub num_posts: usize,
-    
 }
 
 #[tokio::main]
@@ -75,7 +73,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let markdown_path = format!("{}/{filename}", &args.post_path);
 
         // Fetch any media:
-        let media_map = item.download_all(&working_dir.path()).await?;
+        let media_map = item.download_all(working_dir.path()).await?;
         let markdown = item.as_markdown(markdown::truncate_media_url)?;
         let path_map = media_map
             .apply(markdown::truncate_media_url)
