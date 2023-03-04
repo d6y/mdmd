@@ -2,7 +2,8 @@ use clap::Parser;
 use download::MediaCopy;
 use log::info;
 use rss::Channel;
-use std::{error::Error, path::Path, str::FromStr};
+use std::{error::Error, str::FromStr};
+use tempfile::TempDir;
 
 use crate::feed::ChannelSurf;
 
@@ -56,7 +57,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let gh = github::Github::new(&args.github_token, &args.github_repo, &args.github_branch);
     let from = gh.get_last_guid(&args.last_guid_git_path).await?;
 
-    let working_dir = Path::new("./tmp");
+    let working_dir = TempDir::new().expect("creating temporary directory");
 
     for guid in channel.find_next_guids(&from).iter().take(1) {
         // Locate the basics for this item:
@@ -68,7 +69,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let markdown_path = format!("{}/{filename}", &args.post_path);
 
         // Fetch any media:
-        let media_map = item.download_all(working_dir).await?;
+        let media_map = item.download_all(&working_dir.path()).await?;
         let markdown = item.as_markdown(markdown::truncate_media_url)?;
         let path_map = media_map
             .apply(markdown::truncate_media_url)
