@@ -46,8 +46,9 @@ struct Args {
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
-    let rss_str = include_str!("../rss/example01.rss");
-    let channel = Channel::from_str(rss_str).unwrap();
+    // let rss_str = include_str!("../rss/example01.rss");
+    let rss_str = download::feed(&args.feed).await?;
+    let channel = Channel::from_str(&rss_str).unwrap();
 
     let gh = github::Github::new(&args.github_token, &args.github_repo, &args.github_branch);
     let from = gh.get_last_guid(&args.last_guid_git_path).await?;

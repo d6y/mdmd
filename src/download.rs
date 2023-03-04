@@ -9,6 +9,13 @@ use crate::feed::ItemSurf;
 use reqwest::Client;
 use rss::Item;
 
+pub async fn feed(url: &str) -> Result<String, Box<dyn Error>> {
+    let client = Client::new();
+    let response = client.get(url).send().await?;
+    let value = response.text().await?;
+    Ok(value)
+}
+
 #[derive(Debug)]
 pub struct LocalMedia {
     urls: Vec<String>,

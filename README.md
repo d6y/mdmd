@@ -8,13 +8,16 @@ Plan:
 - [ ] Fetch remote RSS feed
 - [x] Find "more recent" posts in feed
 - [x] Fetch media
+- [ ] Add argument for controlling number of items to fetch per run
 - [x] Convert to markdown
-- [ ] Write to github (if credentials supplied)
+- [x] Write to github (if credentials supplied)
    - [x] Fetches latest github revision
    - [x] Commit markdown 
    - [x] ...and media files to github
    - [x] Updates github id.txt with latest URL
-- [ ] Clean up local files
+- [ ] Clean up local files (use tmpdir)
+- [ ] Add docker build
+- [ ] Deploy
 
 # Useful links
 
