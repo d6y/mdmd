@@ -1,8 +1,8 @@
 use clap::Parser;
 use download::MediaCopy;
+use log::info;
 use rss::Channel;
 use std::{error::Error, path::Path, str::FromStr};
-use log::info;
 
 use crate::feed::ChannelSurf;
 
@@ -45,7 +45,6 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-
     env_logger::init();
 
     let args = Args::parse();
@@ -88,7 +87,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let id_content = github::NewContent::text(&args.last_guid_git_path, guid.value());
         new_content.push(id_content);
 
-        
         info!("{filename}");
         gh.commit(&format!("add {filename}"), &new_content).await?;
     }
