@@ -24,3 +24,14 @@ Plan:
 - https://docs.github.com/en/graphql/reference/input-objects#filechanges
 - https://docs.github.com/en/graphql
 - https://docs.github.com/en/graphql/overview/resource-limitations
+
+# Environment
+
+```
+export GITHUB_TOKEN=???
+export GITHUB_REPO=d6y/richard.dallaway.com
+export RUST_LOG=INFO,rustls=off
+```
+
+...but see `cargo run -- -help` for options.
+

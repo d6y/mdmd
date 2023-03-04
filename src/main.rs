@@ -2,6 +2,7 @@ use clap::Parser;
 use download::MediaCopy;
 use rss::Channel;
 use std::{error::Error, path::Path, str::FromStr};
+use log::info;
 
 use crate::feed::ChannelSurf;
 
@@ -21,7 +22,7 @@ struct Args {
     #[arg(long, default_value = "static/mastodon.green/id.txt")]
     last_guid_git_path: String,
 
-    /// Media path prefix for images (note git paths are rooted in "" so no leading /)
+    /// Media path prefix for images. Note git paths are rooted in "" so no leading /
     #[arg(short, long, default_value = "static")]
     media_path_prefix: String,
 
@@ -44,6 +45,9 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+
+    env_logger::init();
+
     let args = Args::parse();
 
     // let rss_str = include_str!("../rss/example01.rss");
@@ -84,7 +88,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let id_content = github::NewContent::text(&args.last_guid_git_path, guid.value());
         new_content.push(id_content);
 
-        println!("{filename}");
+        
+        info!("{filename}");
         gh.commit(&format!("add {filename}"), &new_content).await?;
     }
 
