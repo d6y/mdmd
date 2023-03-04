@@ -42,6 +42,12 @@ struct Args {
     /// Github repository branch
     #[arg(long, env = "GITHUB_BRANCH", default_value = "main")]
     pub github_branch: String,
+
+
+    /// Number of posts to read in this run
+    #[arg(long, short, env = "NUM_POSTS", default_value = "1")]
+    pub num_posts: usize,
+    
 }
 
 #[tokio::main]
@@ -59,7 +65,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let working_dir = TempDir::new().expect("creating temporary directory");
 
-    for guid in channel.find_next_guids(&from).iter().take(1) {
+    for guid in channel.find_next_guids(&from).iter().take(args.num_posts) {
         // Locate the basics for this item:
         let item = channel.find_by_guid(guid).unwrap();
         let id = item.link().and_then(|url| url.split('/').last()).unwrap();

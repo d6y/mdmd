@@ -8,7 +8,7 @@ Plan:
 - [x] Fetch remote RSS feed
 - [x] Find "more recent" posts in feed
 - [x] Fetch media
-- [ ] Add argument for controlling number of items to fetch per run
+- [x] Add argument for controlling number of items to fetch per run
 - [x] Convert to markdown
 - [x] Write to github (if credentials supplied)
    - [x] Fetches latest github revision
@@ -16,7 +16,7 @@ Plan:
    - [x] ...and media files to github
    - [x] Updates github id.txt with latest URL
 - [x] Clean up local files (use tmpdir)
-- [ ] Add docker build
+- [x] Add docker build
 - [ ] Deploy
 
 # Useful links
@@ -24,6 +24,18 @@ Plan:
 - https://docs.github.com/en/graphql/reference/input-objects#filechanges
 - https://docs.github.com/en/graphql
 - https://docs.github.com/en/graphql/overview/resource-limitations
+
+# Docker build
+
+```
+docker build -t mdmd .
+```
+
+Example run:
+
+```
+docker run -it -e GITHUB_TOKEN=$GITHUB_TOKEN -e GITHUB_REPO=$GITHUB_REPO -e RUST_LOG=$RUST_LOG  --rm --name running-mdmd mdmd
+```
 
 # Environment
 
@@ -34,4 +46,3 @@ export RUST_LOG=INFO,rustls=off
 ```
 
 ...but see `cargo run -- -help` for options.
-
