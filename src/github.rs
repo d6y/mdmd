@@ -9,8 +9,6 @@ use serde_json::Value;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
-/// Client configuration
-
 pub struct Github {
     token: String,
     repo: String, // Format: user/repo
@@ -27,14 +25,14 @@ impl Github {
     }
 }
 
-/// New file (addition) representation
-
+/// The content we're dealing with is either a `Path` (i.e., PNG on disk) or `Str` (the Markdown we've created in memory):
 #[derive(Debug, Clone)]
 enum Content {
     Path(PathBuf),
     Str(String),
 }
 
+/// To send content to Github, we need the path inside the repository and a way to access the content (e.g., text or image data).
 #[derive(Debug, Clone)]
 pub struct NewContent {
     git_path: String,
@@ -58,7 +56,6 @@ impl NewContent {
 }
 
 /// Github responses
-
 #[derive(Deserialize, Debug)]
 struct RepoState {
     object: RepoObject,
@@ -70,6 +67,7 @@ struct RepoObject {
 }
 
 impl Github {
+    /// The last RSS Guid we've seen. So we know we want things after this to add as new content.
     pub async fn get_last_guid(&self, path: &str) -> Result<Guid, Box<dyn Error>> {
         let client = reqwest::Client::new();
 
@@ -122,15 +120,8 @@ impl Github {
         Ok(guid)
     }
 
-    pub async fn commit(
-        &self,
-        commit_msg: &str,
-        content: &[NewContent],
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let oid = self.get_oid().await?;
-        self.add_files(&oid, commit_msg, content).await
-    }
-
+    /// Fetch the repository OID: this is the state if the repository,
+    /// distinct from the last GUID, which is the last seen RSS entry.
     async fn get_oid(&self) -> Result<String, Box<dyn std::error::Error>> {
         let url = format!(
             "https://api.github.com/repos/{}/git/ref/heads/{}",
@@ -155,6 +146,17 @@ impl Github {
         }
     }
 
+    /// Commit the content
+    pub async fn commit(
+        &self,
+        commit_msg: &str,
+        content: &[NewContent],
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let oid = self.get_oid().await?;
+        self.add_files(&oid, commit_msg, content).await
+    }
+
+    /// Send a GraphQL mutation to Github to commit all the new content.
     async fn add_files(
         &self,
         oid: &str,
@@ -186,26 +188,7 @@ impl Github {
         }
     }
 
-    async fn read_file(path: &PathBuf) -> Result<Vec<u8>, Box<dyn Error>> {
-        let mut buf = Vec::new();
-        File::open(path).await?.read_to_end(&mut buf).await?;
-        Ok(buf)
-    }
-
-    async fn to_addition(content: &NewContent) -> Result<Value, Box<dyn Error>> {
-        // "The contents of a FileAddition must be encoded using RFC 4648 compliant base64,
-        // i.e. correct padding is required and no characters outside the standard alphabet may be used.
-        let b64_content = match &content.content {
-            Content::Path(p) => general_purpose::STANDARD.encode(Github::read_file(p).await?),
-            Content::Str(s) => general_purpose::STANDARD.encode(s),
-        };
-
-        Ok(json!({
-             "path": format!("{}", content.git_path),
-             "contents": format!("{}", b64_content),
-        }))
-    }
-
+    /// Handle the creation of the GraphQL Json, including BASE64 encoding the content
     async fn mutation_json(
         &self,
         oid: &str,
@@ -238,5 +221,26 @@ impl Github {
         });
 
         Ok(payload.to_string())
+    }
+
+    // Read a single file and turn it into Json for inclusion in the GraphQL
+    async fn to_addition(content: &NewContent) -> Result<Value, Box<dyn Error>> {
+        // "The contents of a FileAddition must be encoded using RFC 4648 compliant base64,
+        // i.e. correct padding is required and no characters outside the standard alphabet may be used.
+        let b64_content = match &content.content {
+            Content::Path(p) => general_purpose::STANDARD.encode(Github::read_file(p).await?),
+            Content::Str(s) => general_purpose::STANDARD.encode(s),
+        };
+
+        Ok(json!({
+             "path": format!("{}", content.git_path),
+             "contents": format!("{}", b64_content),
+        }))
+    }
+
+    async fn read_file(path: &PathBuf) -> Result<Vec<u8>, Box<dyn Error>> {
+        let mut buf = Vec::new();
+        File::open(path).await?.read_to_end(&mut buf).await?;
+        Ok(buf)
     }
 }

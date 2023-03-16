@@ -1,5 +1,6 @@
 use rss::{extension::Extension, Channel, Guid, Item};
 
+// The intention here is to extend a `Channel` with functions to let us find relevant `Item`s or their `Guid`s.
 pub trait ChannelSurf {
     /// Search the channel for the first GUID lexically greater than the given GUID,
     /// which we refer to as "the next GUID" or "next post".
@@ -9,9 +10,11 @@ pub trait ChannelSurf {
     /// which we refer to as "the next GUIDs" or "next posts".
     fn find_next_guids(&self, guid: &Guid) -> Vec<&Guid>;
 
+    /// Lookup an RSS entry (`Item`) by GUID.
     fn find_by_guid(&self, guid: &Guid) -> Option<&Item>;
 }
 
+// The intention here is to be able to fetch all the media (`Entension`s) inside an RSS entry (`Item`)
 pub trait ItemSurf {
     fn medias(&self) -> Vec<&Extension>;
 }

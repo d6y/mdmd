@@ -4,7 +4,7 @@ use rss::{extension::Extension, Item};
 use crate::feed::ItemSurf;
 
 pub trait AsMarkdown {
-    fn as_markdown<F>(&self, media_url_to_path: F) -> Result<String, ParseError>
+    fn as_markdown<F>(&self, media_url_to_path: F, instance: &str) -> Result<String, ParseError>
     where
         F: Fn(&str) -> String;
 }
@@ -13,10 +13,10 @@ impl AsMarkdown for Item {
     fn as_markdown<F: Fn(&str) -> String>(
         &self,
         media_url_to_path: F,
+        instance: &str,
     ) -> Result<String, ParseError> {
         let title = title_date(self.pub_date().unwrap())?;
         let msg = self.description().unwrap();
-        let instance = "mastodon.green";
         let url = self.link().unwrap();
         let date = formal_date(self.pub_date().unwrap())?;
 
@@ -77,6 +77,9 @@ pub fn post_filename(pub_date: &str, id: &str) -> Result<String, ParseError> {
     Ok(format!("{filename_date}-toot-{id}.md"))
 }
 
+/// This is a hack to convert remote (instance-side) media URLs into local paths
+/// E.g., https://files.mastodon.green/etc/etc to /mastodon/green/etc/etc
+/// It works for me, but is likely to bite me/you in the arse
 pub fn truncate_media_url(url: &str) -> String {
     url.replace("https://files.", "/")
 }
@@ -131,11 +134,15 @@ date: 2023-02-04T21:22:20+00:00
 ![An area partly enclosed by cream coloured soft walls, bending in like hands or waves. There are three large TV screens showing ASMR works. Groups of people, in twos and threes, sit on the soft cushioning wearing headsets, the cables stretching to the screens. No one is wearing shoes.](https://files.mastodon.green/media_attachments/files/109/808/524/409/930/443/original/38da0da8e5badfdc.jpeg)
 
 ![An entry in the programme, describing a video: “ASMR can be triggered by watching someone explain something.
-In 1988, the Icelandic artist Björk was the lead singer of The Sugarcubes. In this film, which was part of a documentary made about the band, Bork describes how a television works. Her softly spoken description is accompanied by a close-up shot of her finger tracing the inside of a cathode-ray tube television set. 
+In 1988, the Icelandic artist Björk was the lead singer of The Sugarcubes. In this film, which was part of a documentary made about the band, Bork describes how a television works. Her softly spoken description is accompanied by a close-up shot of her finger tracing the inside of a cathode-ray tube television set.
 The success of an ASM work is often determined by the relationship a viewer has to the ASMRtist through the screen. In this film, Björk's explanation is both generous and empathetic.”](https://files.mastodon.green/media_attachments/files/109/808/524/733/756/242/original/4f4f643fae86839f.jpeg)
 "#;
 
-        assert_eq!(expected, item.as_markdown(|x| x.to_string()).unwrap());
+        assert_eq!(
+            expected,
+            item.as_markdown(|x| x.to_string(), "mastodon.green")
+                .unwrap()
+        );
     }
 
     #[test]
