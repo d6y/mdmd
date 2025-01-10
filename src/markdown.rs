@@ -15,9 +15,8 @@ impl AsMarkdown for Item {
         media_url_to_path: F,
         instance: &str,
     ) -> Result<String, ParseError> {
-        dbg!(&self);
         let title = title_date(self.pub_date().unwrap())?;
-        let msg = self.description().unwrap();
+        let msg = self.description().unwrap_or("");
         let url = self.link().unwrap();
         let date = formal_date(self.pub_date().unwrap())?;
 
