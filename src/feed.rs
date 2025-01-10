@@ -2,16 +2,17 @@ use rss::{extension::Extension, Channel, Guid, Item};
 
 // The intention here is to extend a `Channel` with functions to let us find relevant `Item`s or their `Guid`s.
 pub trait ChannelSurf {
-    /// Search the channel for the first GUID lexically greater than the given GUID,
-    /// which we refer to as "the next GUID" or "next post".
-    fn find_next_guid(&self, guid: &Guid) -> Option<&Guid>;
-
     /// Search the channel for all GUIDs lexically greater than the given GUID,
     /// which we refer to as "the next GUIDs" or "next posts".
     fn find_next_guids(&self, guid: &Guid) -> Vec<&Guid>;
 
     /// Lookup an RSS entry (`Item`) by GUID.
     fn find_by_guid(&self, guid: &Guid) -> Option<&Item>;
+
+    /// Search the channel for the first GUID lexically greater than the given GUID,
+    /// which we refer to as "the next GUID" or "next post".
+    #[cfg(test)]
+    fn find_next_guid(&self, guid: &Guid) -> Option<&Guid>;
 }
 
 // The intention here is to be able to fetch all the media (`Entension`s) inside an RSS entry (`Item`)
@@ -35,10 +36,6 @@ impl ItemSurf for Item {
 }
 
 impl ChannelSurf for Channel {
-    fn find_next_guid(&self, from: &Guid) -> Option<&Guid> {
-        self.find_next_guids(from).into_iter().next()
-    }
-
     fn find_next_guids(&self, from: &Guid) -> Vec<&Guid> {
         let mut candidates: Vec<&Guid> = self
             .items()
@@ -55,6 +52,11 @@ impl ChannelSurf for Channel {
         self.items()
             .iter()
             .find(|&item| item.guid().map(|g| g.value()) == Some(guid.value()))
+    }
+
+    #[cfg(test)]
+    fn find_next_guid(&self, from: &Guid) -> Option<&Guid> {
+        self.find_next_guids(from).into_iter().next()
     }
 }
 

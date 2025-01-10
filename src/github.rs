@@ -110,7 +110,7 @@ impl Github {
 
         let text = response_body["data"]["viewer"]["repository"]["object"]["text"]
             .as_str()
-            .expect(&format!("Unable to extract text from {response_body:?}"));
+            .unwrap_or_else(|| panic!("Unable to extract text from {response_body:?}"));
 
         let guid: Guid = Guid {
             value: text.to_owned(),
