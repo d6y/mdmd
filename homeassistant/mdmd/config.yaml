@@ -1,0 +1,23 @@
+name: mdmd
+version: "1.0.0"
+slug: mdmd
+description: Copies Mastodon posts to markdown files in a GitHub repository
+url: https://github.com/d6y/mdmd
+arch:
+  - aarch64
+  - amd64
+startup: application
+boot: auto
+stdin: true
+options:
+  github_token: null
+  github_repo: null
+  github_branch: main
+  num_posts: 1
+  log_level: info,rustls=off
+schema:
+  github_token: password
+  github_repo: str
+  github_branch: str
+  num_posts: int(1,)
+  log_level: str
