@@ -60,6 +60,103 @@ docker run -it \
 
 
 
+# Running as a Home Assistant app
+
+The `homeassistant/` folder contains a local app for Home Assistant.
+
+The app stays running and runs `mdmd` once each time an automation sends it a line of input.
+
+Install steps from macOS:
+
+## 1. Expose the Home Assistant `addons` folder to your Mac
+
+If you have already done this for another app (e.g., dogpost), skip to step 2.
+
+1. In Home Assistant go to _Settings > Apps_, and install **Samba share**.
+2. On the app's _Configuration_ tab set a username and password, save, then **Start** it.
+3. On the Mac, in Finder choose _Go > Connect to Server_ (⌘K) and enter `smb://homeassistant.local/addons` (or use IP address if that doesn't work).
+   Log in with the Samba username and password. The share mounts at `/Volumes/addons`.
+4. Check you can access the addons from your terminal: `ls /Volumes/addons`. If you can't check _System Settings > Privacy & Security > Files and Folders_ and for your terminal turn on "Network Volumes".
+
+## 2. Copy the app across
+
+From the root of this repository:
+
+```
+./homeassistant/install.sh
+```
+
+This copies the app files plus `Cargo.toml`, `Cargo.lock` and `src/` into `/Volumes/addons/mdmd`.
+Pass a different folder as an argument if the share is mounted elsewhere.
+
+## 3. Install the app
+
+In Home Assistant go to _Settings > Apps_ and click **Install App**. Select `mdmd` and then press **Install**.
+
+The Pi will now compile the code and this will take a while.
+
+## 4. Configure
+
+On the app's **Configuration** tab:
+
+- `github_token` is the token used to read and write the repository.
+- `github_repo` is the repository in the form `user/repo`, e.g., `d6y/richard.dallaway.com`.
+- `github_branch` is the branch to commit to.
+- `num_posts` is the maximum number of posts to copy per run.
+- `log_level` is passed through as `RUST_LOG`.
+
+Save, then **Start** the app. The **Log** tab should show `mdmd: waiting for triggers`.
+
+The app only reads its options at startup, so **Restart** it after changing them.
+
+## 5. Trigger it from an automation
+
+Use the `hassio.addon_stdin` action (the app's id is `local_mdmd`).
+This time follows Home Assistant's timezone:
+
+```yaml
+alias: mdmd daily
+triggers:
+  - trigger: time
+    at: "13:00:00"
+actions:
+  - action: hassio.addon_stdin
+    data:
+      addon: local_mdmd
+      input: run
+mode: single
+```
+
+To test by hand, go to _Developer tools > Actions_, run `hassio.addon_stdin` with the data above, and watch the app's **Log** tab.
+
+**Warning:** there is no dry run. If there's a new post, a run commits it to the repository for real.
+
+## 6. Cutover from the old job
+
+1. Install and configure the app, and leave the automation disabled.
+2. Pause the old `mdmd-job`.
+3. Trigger a run by hand and check the log. A failed run shows `mdmd: failed`.
+   If there was a new post, check the commit in the repository, including any media.
+   If there was nothing new, the first real commit will come from a later run, so check that one instead.
+4. Enable the automation.
+
+The old job can be removed once the new one has run reliably.
+
+## Updating
+
+After changing the code, run `./homeassistant/install.sh` again, press the "refresh" icon on the Apps page in HA, then select **Update** on the app's page.
+
+After changing `homeassistant/mdmd/config.yaml` (e.g., the settings), Rebuild is not enough:
+
+1. Increase `version` in `config.yaml`.
+2. Run `./homeassistant/install.sh`.
+3. In the Home Assistant _Terminal_:
+
+   ```
+   ha store reload
+   ha apps update local_mdmd
+   ```
+
 # Network back and forth
 
 ```mermaid
